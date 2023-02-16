@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:sqflite/sqflite.dart';
-import '../model/Scan.dart';
+import '../model/scan.dart';
 
 abstract class IScanRepository {
   Future<void> insert(Scan scan);

@@ -1,7 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-import 'model/Scan.dart';
+import 'model/scan.dart';
 
 class DatabaseProvider {
   static Future<Database> initDB() async {

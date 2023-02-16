@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
-import 'package:burger/data/model/Scan.dart';
+import 'package:burger/data/model/scan.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -10,7 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/utils/utils.dart';
 
 import 'data/database.dart';
-import 'data/repository/ScanRepository.dart';
+import 'data/repository/scan_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,17 +17,6 @@ void main() async {
   final getIt = GetIt.instance;
   getIt.registerLazySingletonAsync<Database>(() => DatabaseProvider.initDB());
   getIt.registerLazySingleton<IScanRepository>(() => ScanRepository());
-
-  final repo = getIt.get<IScanRepository>();
-
-  var tagId = '1234';
-  await repo.insert(Scan(tagId: tagId));
-  await repo.insert(Scan(tagId: tagId));
-  await repo.insert(Scan(tagId: tagId));
-  await repo.insert(Scan(tagId: tagId));
-
-  var scans = await repo.find(tagId);
-  Logger().i(scans);
 
   runApp(const MyApp());
 }
@@ -51,9 +39,9 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.amber,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Burger Scanner'),
     );
   }
 }
@@ -77,43 +65,84 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   final repo = GetIt.I.get<IScanRepository>();
-
   final logger = Logger();
 
-  String? _tagId;
+  String? _error;
+  List<DateTime> _history = [];
+  Uint8List? previousId;
 
+  @override
+  initState() {
+    super.initState();
+    _startScanner();
+  }
 
-  Future<void> _scan() async {
+  @override
+  dispose() {
+    super.dispose();
+    _stopScanner();
+  }
+
+  Future<void> _startScanner() async {
     bool isAvailable = await NfcManager.instance.isAvailable();
     if (!isAvailable) {
       logger.w('nfc reader not available');
+      setState(() {
+        _error = "nfc reader not available";
+      });
       return;
     }
+
     // Start Session
-    NfcManager.instance.startSession(
-      onDiscovered: (NfcTag tag) async {
-        //NfcManager.instance.stopSession();
-        final id = getId(tag);
-        logger.i('read id: $id');
-
-        repo.insert(Scan(tagId: id));
-
-
-        setState(() {
-          if (id != null) {
-            _tagId = hex(id);
-          } else {
-            _tagId = null;
-          }
-        });
-
-      },
+    await NfcManager.instance.startSession(
+      onDiscovered: onDiscovered,
       pollingOptions: {NfcPollingOption.iso14443},
     );
+  }
 
-    // Stop Session
+  Future<void> _stopScanner() async {
+    await NfcManager.instance.stopSession();
+  }
+
+  Future<void> onDiscovered(NfcTag tag) async {
+    final id = getId(tag);
+
+    _error = null;
+    _history = [];
+
+    // ignore double scans
+    if (listEquals(id, previousId)) {
+      return;
+    }
+    previousId = id;
+
+    if (id == null) {
+      logger.w("No id found", tag.data);
+      setState(() {
+        _error = "no id found";
+      });
+      return;
+    }
+
+    final stringId = hex(id);
+    logger.i('read id: $stringId');
+
+    final history = await repo.find(stringId);
+    repo.insert(Scan(tagId: stringId));
+
+    if (history.isNotEmpty) {
+      logger.i('already scanned: $history');
+      setState(() {
+        _error = "already scanned";
+        _history = history.map((s) => s.timestamp).toList();
+      });
+    } else {
+      setState(() {
+        _error = null;
+        _history = [];
+      });
+    }
   }
 
   Uint8List? getId(NfcTag tag) {
@@ -154,18 +183,33 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Press fab to scan',
-            ),
-            Text("Tag ID: $_tagId"),
+            if (_history.isEmpty && _error == null)
+              const Text(
+                'Not scanned yet',
+                style: TextStyle(color: Colors.green),
+              ),
+            if (_error != null)
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            if (_history.isNotEmpty)
+              Column(
+                children: [
+                  Text(
+                    'Scanned ${_history.length} times',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  for (final date in _history)
+                    Text(
+                      date.toString(),
+                      style: const TextStyle(color: Colors.red),
+                    )
+                ],
+              ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _scan,
-        tooltip: 'Increment',
-        child: const Icon(Icons.nfc),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

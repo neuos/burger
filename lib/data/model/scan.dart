@@ -1,9 +1,5 @@
-import 'dart:typed_data';
-
-import 'package:sqflite/utils/utils.dart';
-
 class Scan {
-  final Uint8List tagId;
+  final String tagId;
   final DateTime timestamp;
 
   static const String tableName = 'scans';
@@ -21,14 +17,14 @@ class Scan {
 
   Map<String, dynamic> toMap() {
     return {
-      'tagId': hex(tagId),
+      'tagId': tagId,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
 
   static Scan fromMap(Map<String, dynamic> map) {
     return Scan(
-      tagId: Uint8List.map['tagId'],
+      tagId: map['tagId'],
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
     );
   }
