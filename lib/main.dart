@@ -1,11 +1,35 @@
 import 'dart:typed_data';
 
+import 'package:burger/data/model/Scan.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/utils/utils.dart';
 
-void main() {
+import 'data/database.dart';
+import 'data/repository/ScanRepository.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final getIt = GetIt.instance;
+  getIt.registerLazySingletonAsync<Database>(() => DatabaseProvider.initDB());
+  getIt.registerLazySingleton<IScanRepository>(() => ScanRepository());
+
+  final repo = getIt.get<IScanRepository>();
+
+  var tagId = '1234';
+  await repo.insert(Scan(tagId: tagId));
+  await repo.insert(Scan(tagId: tagId));
+  await repo.insert(Scan(tagId: tagId));
+  await repo.insert(Scan(tagId: tagId));
+
+  var scans = await repo.find(tagId);
+  Logger().i(scans);
+
   runApp(const MyApp());
 }
 
@@ -53,19 +77,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+
+  final repo = GetIt.I.get<IScanRepository>();
+
   final logger = Logger();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  String? _tagId;
+
 
   Future<void> _scan() async {
     bool isAvailable = await NfcManager.instance.isAvailable();
@@ -76,20 +94,30 @@ class _MyHomePageState extends State<MyHomePage> {
     // Start Session
     NfcManager.instance.startSession(
       onDiscovered: (NfcTag tag) async {
-        NfcManager.instance.stopSession();
-        var id = getId(tag);
+        //NfcManager.instance.stopSession();
+        final id = getId(tag);
         logger.i('read id: $id');
-        // TODO save id to database
+
+        repo.insert(Scan(tagId: id));
+
+
+        setState(() {
+          if (id != null) {
+            _tagId = hex(id);
+          } else {
+            _tagId = null;
+          }
+        });
+
       },
+      pollingOptions: {NfcPollingOption.iso14443},
     );
 
     // Stop Session
   }
 
   Uint8List? getId(NfcTag tag) {
-    var ndef = NdefFormatable.from(tag);
-    var id = ndef?.identifier;
-    return id;
+    return NdefFormatable.from(tag)?.identifier ?? MiFare.from(tag)?.identifier;
   }
 
   @override
@@ -127,19 +155,16 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'You have pushed the button this many times:',
+              'Press fab to scan',
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            Text("Tag ID: $_tagId"),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _scan,
         tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.nfc),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
