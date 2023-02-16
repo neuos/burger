@@ -32,6 +32,8 @@ dependencies:
     sdk: flutter
   nfc_manager: ^3.2.0
   logger: ^1.1.0
+  sqflite: ^2.2.4+1
+  path: ^1.8.2
 
 dev_dependencies:
   flutter_test:
