@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/platform_tags.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,7 +56,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   final logger = Logger();
 
-
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -66,21 +68,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _scan() async {
-    logger.i('scan');
-    // Check availability
     bool isAvailable = await NfcManager.instance.isAvailable();
-    logger.i('available: $isAvailable');
+    if (!isAvailable) {
+      logger.w('nfc reader not available');
+      return;
+    }
     // Start Session
     NfcManager.instance.startSession(
       onDiscovered: (NfcTag tag) async {
-        // Do something with an NfcTag instance.
-        logger.i('tag: $tag');
         NfcManager.instance.stopSession();
+        var id = getId(tag);
+        logger.i('read id: $id');
+        // TODO save id to database
       },
     );
 
     // Stop Session
-    
+  }
+
+  Uint8List? getId(NfcTag tag) {
+    var ndef = NdefFormatable.from(tag);
+    var id = ndef?.identifier;
+    return id;
   }
 
   @override
