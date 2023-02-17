@@ -11,11 +11,11 @@ class StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeData = GetIt.I.get<ThemeData>();
     final Color containerColor;
     final IconData icon;
     final Color color;
 
-    var themeData = GetIt.I.get<ThemeData>();
     switch (status) {
       case Status.success:
         containerColor = themeData.colorScheme.primaryContainer;
