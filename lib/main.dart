@@ -1,7 +1,5 @@
-import 'dart:math';
-
 import 'package:burger/data/model/scan.dart';
-import 'package:flutter/foundation.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -12,7 +10,7 @@ import 'package:sqflite/utils/utils.dart';
 
 import 'data/database.dart';
 import 'data/repository/scan_repository.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'data/widgets/status.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +70,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _startScanner() async {
+    setState(() {
+      _error = "Preparing scanner";
+    });
+
     bool isAvailable = await NfcManager.instance.isAvailable();
     if (!isAvailable) {
       setState(() {
@@ -86,6 +88,10 @@ class _MyHomePageState extends State<MyHomePage> {
       onDiscovered: onDiscovered,
       pollingOptions: {NfcPollingOption.iso14443},
     );
+
+    setState(() {
+      _error = "Ready to scan";
+    });
   }
 
   Future<void> _stopScanner() async {
@@ -141,12 +147,29 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.nfc),
+            onPressed: () async {
+              await _stopScanner();
+              await _startScanner();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Column(children: <Widget>[
           ScanResult(history: _history, error: _error),
           Expanded(child: Container()),
-          const Statistic(),
+          FutureBuilder(
+            future: repo.findAll(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Statistic(data: snapshot.data as List<Scan>);
+              }
+              return const CircularProgressIndicator();
+            },
+          )
         ]),
       ),
     );
@@ -154,40 +177,31 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class Statistic extends StatelessWidget {
-  const Statistic({super.key});
+  const Statistic({super.key, required List<Scan> data}) : _data = data;
+  final List<Scan> _data;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Scan>>(
-      future: GetIt.I.get<IScanRepository>().findAll(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          List<int> counts = getBinned(snapshot.data!);
+    final List<int> counts = getBinned(_data);
+    Logger().i('counts: $counts');
 
-          Logger().i('counts: $counts');
-
-          final chart = LineChart(LineChartData(
-            lineBarsData: [
-              LineChartBarData(
-                spots: counts
-                    .asMap()
-                    .entries
-                    .map((e) => FlSpot(e.key.toDouble(), e.value.toDouble()))
-                    .toList(),
-              ),
-            ],
-          ));
-
-          return Column(
-            children: [
-              Text('History (${snapshot.data!.length})'),
-              AspectRatio(aspectRatio: 1.5, child: chart),
-            ],
-          );
-        } else {
-          return const Text('Loading...');
-        }
-      },
+    return Column(
+      children: [
+        Text('History (${_data.length})'),
+        AspectRatio(
+            aspectRatio: 1.5,
+            child: LineChart(LineChartData(
+              lineBarsData: [
+                LineChartBarData(
+                  spots: counts
+                      .asMap()
+                      .entries
+                      .map((e) => FlSpot(e.key.toDouble(), e.value.toDouble()))
+                      .toList(),
+                ),
+              ],
+            ))),
+      ],
     );
   }
 
@@ -205,6 +219,7 @@ class Statistic extends StatelessWidget {
       final index = scan.timestamp.difference(first).inSeconds ~/ segment;
       counts[index]++;
     }
+    assert(data.length == counts.reduce((a, b) => a + b));
     return counts;
   }
 }
@@ -256,63 +271,6 @@ class ScanResult extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-enum Status { success, warn, error }
-
-class StatusCard extends StatelessWidget {
-  const StatusCard({super.key, required this.status, required this.text});
-
-  final Status status;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color containerColor;
-    final IconData icon;
-    final Color color;
-
-    var themeData = GetIt.I.get<ThemeData>();
-    switch (status) {
-      case Status.success:
-        containerColor = themeData.colorScheme.primaryContainer;
-        icon = Icons.check_box;
-        color = themeData.colorScheme.primary;
-        break;
-      case Status.warn:
-        containerColor = themeData.colorScheme.errorContainer;
-        icon = Icons.warning;
-        color = themeData.colorScheme.error;
-        break;
-      case Status.error:
-        containerColor = themeData.colorScheme.errorContainer;
-        icon = Icons.error;
-        color = themeData.colorScheme.error;
-        break;
-    }
-
-    return Card(
-      color: containerColor,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: color,
-              size: 128,
-            ),
-            Flexible(
-              child: Text(
-                text,
-                style: TextStyle(color: color, fontSize: 32),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
