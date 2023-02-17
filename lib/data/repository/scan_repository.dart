@@ -1,14 +1,16 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../model/scan.dart';
 
 abstract class IScanRepository {
   Future<void> insert(Scan scan);
+
   Future<List<Scan>> find(String tagId);
+
   Future<List<Scan>> findAll();
 }
-
 
 class ScanRepository implements IScanRepository {
   final _db = GetIt.I.getAsync<Database>();
