@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:burger/data/repository/event_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -66,18 +64,42 @@ class _EventListState extends State<EventList> {
         .then((value) => setState(() {}));
   }
 
-  var onTap2 = () {};
+  void _addEvent() {
+    final nameController = TextEditingController();
 
-  Future<void> _addEvent() async {
-    final r = Random();
-    final len = r.nextInt(10) + 5;
-    final name = String.fromCharCodes(List.generate(
-        len,
-        (index) =>
-            r.nextInt('z'.codeUnits.single - 'a'.codeUnits.single) +
-            'a'.codeUnits.single));
-    await repo.create(Event(name: name));
-    setState(() {});
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: const Text("Add event"),
+              content: TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Event name',
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text("Add"),
+                  onPressed: () async {
+                    final name = nameController.text;
+                    if (name.isEmpty) {
+                      return;
+                    }
+                    await repo.create(Event(name: name));
+                    setState(() {});
+                    Navigator.of(context).pop();
+                  },
+                )
+              ],
+            )).then((value) => setState(() {}));
   }
 }
 

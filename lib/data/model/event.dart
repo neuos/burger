@@ -5,7 +5,7 @@ class Event {
   final String name;
   final int? count;
 
-  Event({required this.name, this.id = -1, this.count});
+  Event({required this.name, this.id = -1, this.count}){assert(name.isNotEmpty);}
 
   static const String tableName = 'events';
   static const String createTable = '''
