@@ -10,7 +10,7 @@ abstract class IEventRepository {
 
   Future<void> create(Event event);
 
-  Future<void> deleteEvent(Event event);
+  Future<void> delete(Event event);
 }
 
 class EventRepository implements IEventRepository {
@@ -32,7 +32,7 @@ class EventRepository implements IEventRepository {
   }
 
   @override
-  Future<void> deleteEvent(Event event) async {
+  Future<void> delete(Event event) async {
     final db = await _db;
     final res = await db.delete(
       Event.tableName,

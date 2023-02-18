@@ -28,7 +28,6 @@ class _EventListState extends State<EventList> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _addEvent();
-          logger.d("Add event");
         },
         label: const Text('Add event'),
         icon: const Icon(Icons.add),
@@ -41,9 +40,15 @@ class _EventListState extends State<EventList> {
             return ListView.builder(
               itemCount: events.length,
               itemBuilder: (context, index) {
-                return EventItem(events[index], onTap: () {
-                  navigateEventPage(events[index]);
-                });
+                return EventItem(
+                  events[index],
+                  onTap: () {
+                    navigateEventPage(events[index]);
+                  },
+                  onLongPress: () {
+                    _deleteEvent(events[index]);
+                  },
+                );
               },
             );
           } else {
@@ -67,6 +72,14 @@ class _EventListState extends State<EventList> {
   void _addEvent() {
     final nameController = TextEditingController();
 
+    onSubmit(String name) async {
+      if (name.isEmpty) {
+        return;
+      }
+      await repo.create(Event(name: name));
+      Navigator.of(context).pop();
+    }
+
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -74,6 +87,8 @@ class _EventListState extends State<EventList> {
               content: TextField(
                 controller: nameController,
                 autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: onSubmit,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Event name',
@@ -81,33 +96,81 @@ class _EventListState extends State<EventList> {
               ),
               actions: [
                 TextButton(
-                  child: const Text("Cancel"),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
+                  child: const Text("Cancel"),
                 ),
-                TextButton(
-                  child: const Text("Add"),
-                  onPressed: () async {
-                    final name = nameController.text;
-                    if (name.isEmpty) {
-                      return;
-                    }
-                    await repo.create(Event(name: name));
-                    setState(() {});
-                    Navigator.of(context).pop();
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: nameController,
+                  builder: (context, value, child) {
+                    var name = value.text;
+                    return FilledButton(
+                    onPressed: name.isNotEmpty ? (){
+                      onSubmit(name);
+                    } : null,
+                    child: const Text("Add"),
+                  );
                   },
                 )
               ],
             )).then((value) => setState(() {}));
   }
+
+  void _deleteEvent(Event event) {
+    final themeData = GetIt.I.get<ThemeData>();
+
+    //
+    // final buttonStyle = ButtonStyle(
+    //   backgroundColor: themeData.colorScheme.error,
+    // );
+
+    final container = themeData.colorScheme.errorContainer;
+    final text = themeData.colorScheme.onErrorContainer;
+    final textStyle = TextStyle(color: text);
+
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: container,
+            icon: Icon(Icons.delete, color: text),
+            title: Text(
+              "Delete '${event.name}'?",
+              style: textStyle,
+            ),
+            content: Text(
+                "Do you want to delete the event with ${event.count} scans?"),
+            actions: [
+              TextButton(
+                child: Text("Cancel", style: textStyle),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              FilledButton(
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red),
+                ),
+                child: const Text("Delete"),
+                onPressed: () async {
+                  await repo.delete(event);
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        }).then((value) => setState(() {}));
+  }
 }
 
 class EventItem extends StatelessWidget {
-  const EventItem(this.event, {super.key, this.onTap});
+  const EventItem(this.event,
+      {super.key, this.onTap, required this.onLongPress});
 
   final Event event;
   final GestureTapCallback? onTap;
+  final GestureTapCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +180,7 @@ class EventItem extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: ListTile(
           title: Text(event.name),
           trailing: count,
