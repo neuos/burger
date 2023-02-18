@@ -17,7 +17,7 @@ class ScanResult extends StatelessWidget {
       text = error!;
     } else if (history.length == 1) {
       status = Status.success;
-      text = "Enjoy your Burger";
+      text = "Enjoy";
     } else {
       status = Status.warn;
       text = "Scanned ${history.length} times";

@@ -3,8 +3,9 @@ typedef EventId = int;
 class Event {
   final EventId id;
   final String name;
+  final int? count;
 
-  Event({required this.name, this.id = -1});
+  Event({required this.name, this.id = -1, this.count});
 
   static const String tableName = 'events';
   static const String createTable = '''
@@ -25,12 +26,13 @@ class Event {
     return Event(
       id: map['id'],
       name: map['name'],
+      count: map['count'],
     );
   }
 
 
   @override
   String toString() {
-    return 'Event{id: $id, name: $name}';
+    return 'Event{id: $id, name: $name, count: $count}';
   }
 }

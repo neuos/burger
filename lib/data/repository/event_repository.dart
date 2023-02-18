@@ -3,29 +3,32 @@ import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../model/event.dart';
+import '../model/scan.dart';
 
-abstract class IEventRepository{
+abstract class IEventRepository {
   Future<List<Event>> getEvents();
-  Future<void> addEvent(Event event);
+
+  Future<void> create(Event event);
+
   Future<void> deleteEvent(Event event);
 }
 
-class EventRepository implements IEventRepository{
+class EventRepository implements IEventRepository {
   final _db = GetIt.I.getAsync<Database>();
   final logger = Logger();
 
-
   @override
-  Future<Event> addEvent(Event event) async {
+  Future<void> create(Event event) async {
     final db = await _db;
+
+    var map = event.toMap();
+    map.remove('id');
     final res = await db.insert(
       Event.tableName,
-      event.toMap(),
+      map,
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
-    logger.d("inserted $res");
-
-    return event;
+    logger.d("inserted event with id $res");
   }
 
   @override
@@ -42,12 +45,14 @@ class EventRepository implements IEventRepository{
   @override
   Future<List<Event>> getEvents() async {
     final db = await _db;
-    var res = await db.query(
-      Event.tableName,
-      orderBy: 'timestamp ASC',
-    );
+
+    var res = await db.rawQuery('''
+      SELECT id, name, COUNT(tagId) as count
+      FROM ${Event.tableName} left join ${Scan.tableName} on ${Event.tableName}.id = ${Scan.tableName}.eventId
+      GROUP BY id
+      ORDER BY id DESC''');
+
     logger.d("found ${res.length} results");
     return res.map(Event.fromMap).toList();
   }
-
 }
