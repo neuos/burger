@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
 import '../data/model/scan.dart';
@@ -11,7 +10,7 @@ class Statistic extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = GetIt.I.get<ThemeData>();
+    final colorScheme = Theme.of(context).colorScheme;
     final List<int> counts = getBinned(_data);
 
     Logger().i('counts: $counts');
@@ -29,10 +28,10 @@ class Statistic extends StatelessWidget {
                       .entries
                       .map((e) => FlSpot(e.key.toDouble(), e.value.toDouble()))
                       .toList(),
-                  color: themeData.primaryColor,
+                  color: colorScheme.primary,
                 ),
               ],
-              backgroundColor: themeData.colorScheme.primaryContainer,
+              backgroundColor: colorScheme.primaryContainer,
             ))),
       ],
     );

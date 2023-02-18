@@ -118,15 +118,9 @@ class _EventListState extends State<EventList> {
   }
 
   void _deleteEvent(Event event) {
-    final themeData = GetIt.I.get<ThemeData>();
-
-    //
-    // final buttonStyle = ButtonStyle(
-    //   backgroundColor: themeData.colorScheme.error,
-    // );
-
-    final container = themeData.colorScheme.errorContainer;
-    final text = themeData.colorScheme.onErrorContainer;
+    final colorScheme = Theme.of(context).colorScheme;
+    final container = colorScheme.errorContainer;
+    final text = colorScheme.onErrorContainer;
     final textStyle = TextStyle(color: text);
 
     showDialog(
