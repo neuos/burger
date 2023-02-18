@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
+import '../data/model/event.dart';
 import '../data/model/scan.dart';
 import '../data/repository/scan_repository.dart';
 import '../scanner.dart';
@@ -9,9 +10,10 @@ import 'scan_result.dart';
 import 'statistic.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({super.key, required this.title, required this.event});
 
   final String title;
+  final Event event;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -73,8 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     logger.i('read ID: $id');
 
-    await repo.insert(Scan(tagId: id));
-    final history = await repo.find(id);
+    await repo.insert(Scan(tagId: id, eventId: widget.event.id));
+    final history = await repo.find(widget.event.id, id);
     setState(() {
       _history = history.map((e) => e.timestamp).toList();
     });
@@ -100,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ScanResult(history: _history, error: _error),
           Expanded(child: Container()),
           FutureBuilder(
-            future: repo.findAll(),
+            future: repo.findAll(widget.event.id),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return Card(child: Statistic(data: snapshot.data as List<Scan>));

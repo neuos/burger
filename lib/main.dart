@@ -1,3 +1,4 @@
+import 'package:burger/data/model/event.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:sqflite/sqflite.dart';
@@ -27,9 +28,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     var themeData = GetIt.I.get<ThemeData>();
 
+    final event = Event(name: "Grillfeier");
     return MaterialApp(
       theme: themeData,
-      home: const MyHomePage(title: 'Burger Scanner'),
+      home: MyHomePage(title: 'Burger Scanner', event: event),
     );
   }
 }
