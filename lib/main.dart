@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'data/database.dart';
 import 'data/repository/scan_repository.dart';
-import 'widgets/home_page.dart';
+import 'widgets/event_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
     final event = Event(name: "Grillfeier");
     return MaterialApp(
       theme: themeData,
-      home: MyHomePage(title: 'Burger Scanner', event: event),
+      home: EventPage(title: 'Burger Scanner', event: event),
     );
   }
 }

@@ -9,17 +9,17 @@ import '../scanner.dart';
 import 'scan_result.dart';
 import 'statistic.dart';
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title, required this.event});
+class EventPage extends StatefulWidget {
+  const EventPage({super.key, required this.title, required this.event});
 
   final String title;
   final Event event;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<EventPage> createState() => _EventPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _EventPageState extends State<EventPage> {
   final repo = GetIt.I.get<IScanRepository>();
   final logger = Logger();
 
