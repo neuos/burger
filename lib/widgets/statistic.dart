@@ -15,7 +15,7 @@ class Statistic extends StatelessWidget {
     final List<int> counts = getBinned(_data);
     final List<DateTime> binTimes = getBinTimes(_data, segments: counts.length);
 
-    Logger().i('counts: $counts');
+    Logger().d('counts: $counts');
 
     return Column(
       children: [
@@ -81,6 +81,7 @@ class Statistic extends StatelessWidget {
       Logger().w('no data');
       return List.filled(segments, 0);
     }
+    segments = segments.clamp(0, data.length);
     final first = data.first.timestamp;
     final last = data.last.timestamp.add(const Duration(seconds: 1));
     final diff = last.difference(first).inSeconds;

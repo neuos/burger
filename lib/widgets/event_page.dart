@@ -134,6 +134,9 @@ class _EventPageState extends State<EventPage> {
       future: repo.findAll(widget.event.id),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
+          if(snapshot.data!.isEmpty){
+            return const SizedBox();
+          }
           return Card(child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Statistic(data: snapshot.data as List<Scan>),
