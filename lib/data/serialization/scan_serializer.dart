@@ -6,6 +6,7 @@ import 'package:burger/data/repository/event_repository.dart';
 import 'package:burger/data/repository/scan_repository.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -27,7 +28,8 @@ class ScanSerializer implements IScanSerializer {
   Future<void> export(Event event) async {
     final fullHistory = await _scanRepo.findAll(event.id);
     final directory = await getApplicationDocumentsDirectory();
-    final filename = "${event.name} - ${fullHistory.last.timestamp}.csv";
+    final timestamp = DateFormat("dd.MM.yy-HH:mm:ss").format(fullHistory.last.timestamp);
+    final filename = "${event.name} - $timestamp.csv";
     final file = File('${directory.path}/$filename');
     final csv = fullHistory.map((e) => e.toCsv()).join('\n');
     await file.writeAsString(csv);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'status.dart';
 
@@ -40,7 +41,7 @@ class ScanResult extends StatelessWidget {
                   final date = history[index];
                   return Card(
                     child: ListTile(
-                      title: Text(date.toString()),
+                      title: Text(DateFormat("dd.MM.yy HH:mm:ss").format(date)),
                     ),
                   );
                 },

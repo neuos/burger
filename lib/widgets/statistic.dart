@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
 import '../data/model/scan.dart';
@@ -32,15 +33,34 @@ class Statistic extends StatelessWidget {
                   color: colorScheme.primary,
                 ),
               ],
+              gridData: FlGridData(show: true),
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  tooltipBgColor: colorScheme.secondary,
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((e) {
+                      final index = e.spotIndex.toInt();
+                      if (index < counts.length) {
+                        return LineTooltipItem(counts[index].toString(),
+                            TextStyle(color: colorScheme.onSecondary));
+                      }
+                      return LineTooltipItem('', const TextStyle());
+                    }).toList();
+                  },
+                ),
+              ),
               titlesData: FlTitlesData(
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       final index = value.toInt();
+                      if (index % 2 != 0) {
+                        return const Text('');
+                      }
                       if (index < binTimes.length) {
                         return Text(
-                            '${binTimes[index].hour}:${binTimes[index].minute}');
+                            DateFormat("HH:mm").format(binTimes[index]));
                       }
                       return const Text('');
                     },
@@ -56,7 +76,7 @@ class Statistic extends StatelessWidget {
     );
   }
 
-  List<int> getBinned(List<Scan> data, {int segments = 8}) {
+  List<int> getBinned(List<Scan> data, {int segments = 9}) {
     if (data.isEmpty) {
       Logger().w('no data');
       return List.filled(segments, 0);
