@@ -26,28 +26,23 @@ class ScanResult extends StatelessWidget {
 
     return Column(
       children: [
-        Column(
-          children: [
-            StatusCard(
-              status: status,
-              text: text,
-            ),
-            SizedBox(
-              height: 300,
-              child: ListView.builder(
-                shrinkWrap: false,
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final date = history[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(DateFormat("dd.MM.yy HH:mm:ss").format(date)),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+        StatusCard(
+          status: status,
+          text: text,
+        ),
+        Expanded(
+          child: ListView.builder(
+            shrinkWrap: false,
+            itemCount: history.length,
+            itemBuilder: (context, index) {
+              final date = history[index];
+              return Card(
+                child: ListTile(
+                  title: Text(DateFormat("dd.MM.yy HH:mm:ss").format(date)),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );

@@ -129,18 +129,19 @@ class _EventPageState extends State<EventPage> {
       ),
       body: Center(
         child: Column(children: <Widget>[
-          ScanResult(history: _history, error: _error),
-          Expanded(child: Container()),
+          Expanded(child: ScanResult(history: _history, error: _error)),
           FutureBuilder(
-            future: repo.findAll(widget.event.id),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return Card(
-                    child: Statistic(data: snapshot.data as List<Scan>));
-              }
-              return const CircularProgressIndicator();
-            },
-          )
+      future: repo.findAll(widget.event.id),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Card(child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Statistic(data: snapshot.data as List<Scan>),
+          ));
+        }
+        return const CircularProgressIndicator();
+      },
+    ),
         ]),
       ),
     );
