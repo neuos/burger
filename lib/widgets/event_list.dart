@@ -1,4 +1,5 @@
 import 'package:burger/data/repository/event_repository.dart';
+import 'package:burger/data/serialization/scan_serializer.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -15,6 +16,7 @@ class EventList extends StatefulWidget {
 
 class _EventListState extends State<EventList> {
   final repo = GetIt.I.get<IEventRepository>();
+  final serializer = GetIt.I.get<IScanSerializer>();
   final logger = Logger();
 
   List<Event> events = [];
@@ -25,18 +27,49 @@ class _EventListState extends State<EventList> {
       appBar: AppBar(
         title: const Text('Events'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _addEvent();
-        },
-        label: const Text('Add event'),
-        icon: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: _import,
+            label: const Text("Import event"),
+            icon: const Icon(Icons.file_open),
+          ),
+          const SizedBox(
+            height: 16,
+          ),
+          FloatingActionButton.extended(
+            onPressed: () {
+              _addEvent();
+            },
+            label: const Text('Create event'),
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: FutureBuilder(
         future: repo.getEvents(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             events = snapshot.data as List<Event>;
+            if (events.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      "No events yet",
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                  ],
+                ),
+              );
+            }
             return ListView.builder(
               itemCount: events.length,
               itemBuilder: (context, index) {
@@ -83,7 +116,7 @@ class _EventListState extends State<EventList> {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
-              title: const Text("Add event"),
+              title: const Text("Create event"),
               content: TextField(
                 controller: nameController,
                 autofocus: true,
@@ -106,11 +139,13 @@ class _EventListState extends State<EventList> {
                   builder: (context, value, child) {
                     var name = value.text;
                     return FilledButton(
-                    onPressed: name.isNotEmpty ? (){
-                      onSubmit(name);
-                    } : null,
-                    child: const Text("Add"),
-                  );
+                      onPressed: name.isNotEmpty
+                          ? () {
+                              onSubmit(name);
+                            }
+                          : null,
+                      child: const Text("Create"),
+                    );
                   },
                 )
               ],
@@ -155,6 +190,18 @@ class _EventListState extends State<EventList> {
             ],
           );
         }).then((value) => setState(() {}));
+  }
+
+  void _import() async {
+    try {
+      await serializer.importNew();
+    } catch (e) {
+      logger.e(e);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("import failed")));
+    } finally {
+      setState(() {});
+    }
   }
 }
 
