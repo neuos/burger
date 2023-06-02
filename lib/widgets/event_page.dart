@@ -1,11 +1,7 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
+import 'package:burger/data/serialization/scan_serializer.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../data/model/event.dart';
 import '../data/model/scan.dart';
@@ -26,6 +22,7 @@ class EventPage extends StatefulWidget {
 
 class _EventPageState extends State<EventPage> {
   final repo = GetIt.I.get<IScanRepository>();
+  final serializer = GetIt.I.get<IScanSerializer>();
   final logger = Logger();
 
   String? _error;
@@ -133,50 +130,17 @@ class _EventPageState extends State<EventPage> {
     );
   }
 
-  // create file with all scans and share it
-  void _export() async {
-    final fullHistory = await repo.findAll(widget.event.id);
-    final directory = await getApplicationDocumentsDirectory();
-    final filename = "${widget.event.name} ${fullHistory.last.timestamp}.csv";
-    final file = File('${directory.path}/$filename');
-    final csv = fullHistory.map((e) => e.toCsv()).join('\n');
-    await file.writeAsString(csv);
-    logger.i("sharing $filename with ${fullHistory.length} scans");
-    await Share.shareXFiles([XFile(file.path)], text: filename);
-  }
-
   void _restartScanner() async {
     await _stopScanner();
     await _startScanner();
   }
 
-  // opens a file picker and imports scans from a csv file
+  void _export() async {
+    await serializer.export(widget.event);
+  }
+
   void _import() async {
-    final picked = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
-    );
-    final path = picked?.files.single.path;
-    if (path == null) {
-      logger.i('no file selected');
-      return;
-    }
-    final file = File(path);
-    var eventId = widget.event.id;
-    final before = await repo.findAll(eventId);
-    final lines = await file.readAsLines();
-    if(lines.isEmpty) {
-      logger.w('no scans found');
-      return;
-    }
-    final scans = lines.map((e) => Scan.fromCsv(e, eventId)).toList();
-    for (final scan in scans) {
-      logger.i(scan);
-      await repo.insert(scan);
-    }
-    final after = await repo.findAll(eventId);
-    setState(() {
-      logger.i("before: ${before.length}, after: ${after.length}");
-    });
+    await serializer.import(widget.event);
+    setState(() {});
   }
 }

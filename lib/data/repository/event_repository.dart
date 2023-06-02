@@ -8,7 +8,7 @@ import '../model/scan.dart';
 abstract class IEventRepository {
   Future<List<Event>> getEvents();
 
-  Future<void> create(Event event);
+  Future<int> create(Event event);
 
   Future<void> delete(Event event);
 }
@@ -18,17 +18,18 @@ class EventRepository implements IEventRepository {
   final logger = Logger();
 
   @override
-  Future<void> create(Event event) async {
+  Future<int> create(Event event) async {
     final db = await _db;
 
     var map = event.toMap();
     map.remove('id');
-    final res = await db.insert(
+    final id = await db.insert(
       Event.tableName,
       map,
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
-    logger.d("inserted event with id $res");
+    logger.d("inserted event with id $id");
+    return id;
   }
 
   @override
