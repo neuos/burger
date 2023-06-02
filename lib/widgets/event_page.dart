@@ -95,8 +95,24 @@ class _EventPageState extends State<EventPage> {
           IconButton(icon: const Icon(Icons.nfc), onPressed: _restartScanner),
           PopupMenuButton(
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'export', child: Text('Export')),
-              const PopupMenuItem(value: 'import', child: Text('Import'))
+              const PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(Icons.share),
+                      Text('Export'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 'import',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(Icons.file_open),
+                      Text('Import'),
+                    ],
+                  ))
             ],
             onSelected: (value) {
               switch (value) {
