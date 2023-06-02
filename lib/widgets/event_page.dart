@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -55,9 +56,11 @@ class _EventPageState extends State<EventPage> {
 
   Future<void> _stopScanner() async {
     await stopScanner();
-    setState(() {
-      _error = "Scanner stopped";
-    });
+    if (mounted) {
+      setState(() {
+        _error = "Scanner stopped";
+      });
+    }
   }
 
   Future<void> onDiscovered(String? id) async {
@@ -93,7 +96,22 @@ class _EventPageState extends State<EventPage> {
         title: Text(widget.title),
         actions: [
           IconButton(icon: const Icon(Icons.nfc), onPressed: _restartScanner),
-          IconButton(onPressed: _export, icon: const Icon(Icons.share)),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'export', child: Text('Export')),
+              const PopupMenuItem(value: 'import', child: Text('Import'))
+            ],
+            onSelected: (value) {
+              switch (value) {
+                case 'export':
+                  _export();
+                  break;
+                case 'import':
+                  _import();
+                  break;
+              }
+            },
+          )
         ],
       ),
       body: Center(
@@ -119,15 +137,46 @@ class _EventPageState extends State<EventPage> {
   void _export() async {
     final fullHistory = await repo.findAll(widget.event.id);
     final directory = await getApplicationDocumentsDirectory();
-    final filename = "${widget.event.name} - ${fullHistory.last.timestamp}.csv";
+    final filename = "${widget.event.name} ${fullHistory.last.timestamp}.csv";
     final file = File('${directory.path}/$filename');
     final csv = fullHistory.map((e) => e.toCsv()).join('\n');
     await file.writeAsString(csv);
+    logger.i("sharing $filename with ${fullHistory.length} scans");
     await Share.shareXFiles([XFile(file.path)], text: filename);
   }
 
   void _restartScanner() async {
     await _stopScanner();
     await _startScanner();
+  }
+
+  // opens a file picker and imports scans from a csv file
+  void _import() async {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
+    final path = picked?.files.single.path;
+    if (path == null) {
+      logger.i('no file selected');
+      return;
+    }
+    final file = File(path);
+    var eventId = widget.event.id;
+    final before = await repo.findAll(eventId);
+    final lines = await file.readAsLines();
+    if(lines.isEmpty) {
+      logger.w('no scans found');
+      return;
+    }
+    final scans = lines.map((e) => Scan.fromCsv(e, eventId)).toList();
+    for (final scan in scans) {
+      logger.i(scan);
+      await repo.insert(scan);
+    }
+    final after = await repo.findAll(eventId);
+    setState(() {
+      logger.i("before: ${before.length}, after: ${after.length}");
+    });
   }
 }

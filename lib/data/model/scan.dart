@@ -1,5 +1,3 @@
-
-
 import 'event.dart';
 
 class Scan {
@@ -15,11 +13,11 @@ class Scan {
       timestamp INTEGER,
       eventId INTEGER,
       FOREIGN KEY(eventId) REFERENCES ${Event.tableName}(id)
-      PRIMARY KEY (tagId, timestamp)
+      PRIMARY KEY (eventId, tagId, timestamp)
     )
   ''';
 
-  Scan({ required this.eventId, required this.tagId, DateTime? timestamp})
+  Scan({required this.eventId, required this.tagId, DateTime? timestamp})
       : timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
@@ -40,19 +38,19 @@ class Scan {
 
   @override
   String toString() {
-    return 'Scan{tagId: $tagId, timestamp: $timestamp}';
+    return 'Scan{eventId: $eventId, tagId: $tagId, timestamp: $timestamp}';
   }
 
   toCsv() {
-    return '$eventId,$tagId,${timestamp.millisecondsSinceEpoch}';
+    return '$tagId,${timestamp.millisecondsSinceEpoch}';
   }
 
-  static Scan fromCsv(String csv) {
+  static Scan fromCsv(String csv, int eventId) {
     final parts = csv.split(',');
     return Scan(
-      eventId: int.parse(parts[0]),
-      tagId: parts[1],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])),
+      eventId: eventId,
+      tagId: parts[0],
+      timestamp: DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])),
     );
   }
 }

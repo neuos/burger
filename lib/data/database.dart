@@ -12,7 +12,7 @@ class DatabaseProvider {
         await db.execute(Event.createTable);
         await db.execute(Scan.createTable);
       },
-      version: 2,
+      version: 3,
     );
   }
 }
