@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/model/event.dart';
 import '../data/model/scan.dart';
@@ -75,7 +79,7 @@ class _EventPageState extends State<EventPage> {
 
     logger.i('read ID: $id');
 
-    await repo.insert(Scan(tagId: id, eventId: widget.event.id));
+    await repo.insert(Scan(eventId: widget.event.id, tagId: id));
     final history = await repo.find(widget.event.id, id);
     setState(() {
       _history = history.map((e) => e.timestamp).toList();
@@ -88,13 +92,8 @@ class _EventPageState extends State<EventPage> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.nfc),
-            onPressed: () async {
-              await _stopScanner();
-              await _startScanner();
-            },
-          ),
+          IconButton(icon: const Icon(Icons.nfc), onPressed: _restartScanner),
+          IconButton(onPressed: _export, icon: const Icon(Icons.share)),
         ],
       ),
       body: Center(
@@ -105,7 +104,8 @@ class _EventPageState extends State<EventPage> {
             future: repo.findAll(widget.event.id),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                return Card(child: Statistic(data: snapshot.data as List<Scan>));
+                return Card(
+                    child: Statistic(data: snapshot.data as List<Scan>));
               }
               return const CircularProgressIndicator();
             },
@@ -113,5 +113,21 @@ class _EventPageState extends State<EventPage> {
         ]),
       ),
     );
+  }
+
+  // create file with all scans and share it
+  void _export() async {
+    final fullHistory = await repo.findAll(widget.event.id);
+    final directory = await getApplicationDocumentsDirectory();
+    final filename = "${widget.event.name} - ${fullHistory.last.timestamp}.csv";
+    final file = File('${directory.path}/$filename');
+    final csv = fullHistory.map((e) => e.toCsv()).join('\n');
+    await file.writeAsString(csv);
+    await Share.shareXFiles([XFile(file.path)], text: filename);
+  }
+
+  void _restartScanner() async {
+    await _stopScanner();
+    await _startScanner();
   }
 }
